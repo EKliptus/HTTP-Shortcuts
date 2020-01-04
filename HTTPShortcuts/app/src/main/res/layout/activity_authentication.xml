@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <include layout="@layout/toolbar_layout" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ch.rmy.android.http_shortcuts.views.LabelledSpinner
+                android:id="@+id/input_authentication_method"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:labelText="@string/label_authentication_method" />
+
+            <RelativeLayout
+                android:id="@+id/container_username"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:id="@+id/label_username"
+                    style="@style/Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_username" />
+
+                <ch.rmy.android.http_shortcuts.variables.VariableEditText
+                    android:id="@+id/input_username"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/label_username"
+                    android:inputType="textNoSuggestions"
+                    android:lines="1"
+                    android:paddingRight="@dimen/variable_button_spacing" />
+
+                <ch.rmy.android.http_shortcuts.variables.VariableButton
+                    android:id="@+id/variable_button_username"
+                    style="@style/VariableButton"
+                    android:layout_below="@+id/label_username"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/container_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/label_password"
+                    style="@style/Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_password" />
+
+                <ch.rmy.android.http_shortcuts.variables.VariableEditText
+                    android:id="@+id/input_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/label_password"
+                    android:inputType="textNoSuggestions"
+                    android:lines="1"
+                    android:paddingRight="@dimen/variable_button_spacing" />
+
+                <ch.rmy.android.http_shortcuts.variables.VariableButton
+                    android:id="@+id/variable_button_password"
+                    style="@style/VariableButton"
+                    android:layout_below="@+id/label_password"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true" />
+            </RelativeLayout>
+
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
