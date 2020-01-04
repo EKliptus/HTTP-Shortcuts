@@ -4,11 +4,9 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import ch.rmy.android.http_shortcuts.R
 import ch.rmy.android.http_shortcuts.extensions.mapIf
 import ch.rmy.android.http_shortcuts.http.ShortcutResponse
 import ch.rmy.android.http_shortcuts.variables.VariableManager
-import ch.rmy.android.http_shortcuts.variables.VariablePlaceholderProvider
 import com.android.volley.VolleyError
 import io.reactivex.Completable
 import java.util.concurrent.TimeUnit
@@ -43,15 +41,11 @@ class VibrateAction(actionType: VibrateActionType, data: Map<String, String>) : 
     private val pattern: VibrationPattern
         get() = findPattern(patternId)
 
-    override fun createEditorView(context: Context, variablePlaceholderProvider: VariablePlaceholderProvider) = VibrateActionEditorView(context, this)
-
     interface VibrationPattern {
 
         val duration: Long
 
         fun execute(vibrator: Vibrator)
-
-        fun getDescription(context: Context): String
 
     }
 
@@ -61,8 +55,6 @@ class VibrateAction(actionType: VibrateActionType, data: Map<String, String>) : 
         const val KEY_WAIT_FOR_COMPLETION = "wait"
 
         private const val PATTERN_COUNT = 3
-
-        fun getPatterns() = (0 until PATTERN_COUNT).map { findPattern(it) }
 
         private fun findPattern(patternId: Int): VibrationPattern =
             when (patternId) {
@@ -78,9 +70,6 @@ class VibrateAction(actionType: VibrateActionType, data: Map<String, String>) : 
                             vibrator.vibrate(duration)
                         }
                     }
-
-                    override fun getDescription(context: Context): String =
-                        context.getString(R.string.action_type_vibrate_description_pattern_1)
                 }
                 2 -> object : VibrationPattern {
                     override val duration: Long
@@ -95,9 +84,6 @@ class VibrateAction(actionType: VibrateActionType, data: Map<String, String>) : 
                             vibrator.vibrate(pattern, -1)
                         }
                     }
-
-                    override fun getDescription(context: Context): String =
-                        context.getString(R.string.action_type_vibrate_description_pattern_2)
                 }
                 else -> object : VibrationPattern {
                     override val duration: Long
@@ -111,9 +97,6 @@ class VibrateAction(actionType: VibrateActionType, data: Map<String, String>) : 
                             vibrator.vibrate(duration)
                         }
                     }
-
-                    override fun getDescription(context: Context): String =
-                        context.getString(R.string.action_type_vibrate_description_pattern_0)
                 }
             }
 

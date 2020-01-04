@@ -6,23 +6,26 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import ch.rmy.android.http_shortcuts.R
 import ch.rmy.android.http_shortcuts.actions.types.ActionFactory
+import ch.rmy.android.http_shortcuts.data.Commons
 import ch.rmy.android.http_shortcuts.data.Controller
 import ch.rmy.android.http_shortcuts.data.models.Shortcut
+import ch.rmy.android.http_shortcuts.dialogs.DialogBuilder
 import ch.rmy.android.http_shortcuts.extensions.attachTo
 import ch.rmy.android.http_shortcuts.extensions.cancel
 import ch.rmy.android.http_shortcuts.extensions.consume
 import ch.rmy.android.http_shortcuts.extensions.detachFromRealm
 import ch.rmy.android.http_shortcuts.extensions.logException
-import ch.rmy.android.http_shortcuts.extensions.showIfPossible
 import ch.rmy.android.http_shortcuts.extensions.showToast
 import ch.rmy.android.http_shortcuts.extensions.startActivity
 import ch.rmy.android.http_shortcuts.extensions.truncate
+import ch.rmy.android.http_shortcuts.extensions.tryOrLog
 import ch.rmy.android.http_shortcuts.extensions.visible
 import ch.rmy.android.http_shortcuts.http.ExecutionScheduler
 import ch.rmy.android.http_shortcuts.http.HttpRequester
@@ -31,14 +34,16 @@ import ch.rmy.android.http_shortcuts.scripting.ScriptExecutor
 import ch.rmy.android.http_shortcuts.utils.BaseIntentBuilder
 import ch.rmy.android.http_shortcuts.utils.DateUtil
 import ch.rmy.android.http_shortcuts.utils.GsonUtil
+import ch.rmy.android.http_shortcuts.utils.HTMLUtil
 import ch.rmy.android.http_shortcuts.utils.IntentUtil
+import ch.rmy.android.http_shortcuts.utils.NetworkUtil
 import ch.rmy.android.http_shortcuts.utils.Validation
 import ch.rmy.android.http_shortcuts.variables.VariableManager
 import ch.rmy.android.http_shortcuts.variables.VariableResolver
 import ch.rmy.android.http_shortcuts.variables.Variables
-import com.afollestad.materialdialogs.MaterialDialog
+import ch.rmy.android.http_shortcuts.views.ResponseWebView
+import ch.rmy.android.http_shortcuts.views.SyntaxHighlightView
 import com.android.volley.VolleyError
-import com.github.chen0040.androidcodeview.SourceCodeView
 import fr.castorflex.android.circularprogressbar.CircularProgressBar
 import io.reactivex.Completable
 import io.reactivex.Single
@@ -51,18 +56,33 @@ import kotlin.math.pow
 
 class ExecuteActivity : BaseActivity() {
 
+    override val initializeWithTheme: Boolean
+        get() = false
+
     private val controller by lazy {
         destroyer.own(Controller())
     }
     private lateinit var shortcut: Shortcut
     private var lastResponse: ShortcutResponse? = null
 
+    private val showProgressRunnable = Runnable {
+        if (progressDialog == null) {
+            if ((context as? BaseActivity)?.isFinishing == false) {
+                tryOrLog {
+                    progressDialog = ProgressDialog.show(context, null, String.format(getString(R.string.progress_dialog_message), shortcutName))
+                }
+            }
+        }
+    }
     private var progressDialog: ProgressDialog? = null
 
     private val responseText: TextView by bindView(R.id.response_text)
     private val responseTextContainer: View by bindView(R.id.response_text_container)
-    private val formattedResponseText: SourceCodeView by bindView(R.id.formatted_response_text)
+    private val formattedResponseText: SyntaxHighlightView by bindView(R.id.formatted_response_text)
+    private val responseWebView: ResponseWebView by bindView(R.id.response_web_view)
     private val progressSpinner: CircularProgressBar by bindView(R.id.progress_spinner)
+
+    private val handler = Handler()
 
     private val actionFactory by lazy {
         ActionFactory(context)
@@ -95,10 +115,11 @@ class ExecuteActivity : BaseActivity() {
             finishWithoutAnimation()
             return
         }
-        if (shortcut.isFeedbackUsesUI) {
+        if (shortcut.isFeedbackUsingUI) {
             title = shortcutName
             destroyer.own(::hideProgress)
             if (shortcut.isFeedbackInWindow) {
+                setTheme(themeHelper.theme)
                 setContentView(R.layout.activity_execute)
             }
         }
@@ -126,31 +147,36 @@ class ExecuteActivity : BaseActivity() {
                     finishWithoutAnimation()
                 }
             )
-            .attachTo(destroyer)
     }
 
     private fun requiresConfirmation() =
         shortcut.requireConfirmation && tryNumber == 0
 
     private fun shouldFinishAfterExecution() =
-        !shortcut.isFeedbackUsesUI || shouldDelayExecution()
+        !shortcut.isFeedbackUsingUI || shouldDelayExecution()
 
     private fun shouldDelayExecution() =
         shortcut.delay > 0 && tryNumber == 0
 
+    private fun shouldFinishImmediately() =
+        shouldFinishAfterExecution()
+            && shortcut.codeOnPrepare.isEmpty()
+            && shortcut.codeOnSuccess.isEmpty()
+            && shortcut.codeOnFailure.isEmpty()
+            && !NetworkUtil.isNetworkPerformanceRestricted(context)
+
     private fun promptForConfirmation(): Completable =
         Completable.create { emitter ->
-            MaterialDialog.Builder(context)
+            DialogBuilder(context)
                 .title(shortcutName)
-                .content(R.string.dialog_message_confirm_shortcut_execution)
+                .message(R.string.dialog_message_confirm_shortcut_execution)
                 .dismissListener {
                     emitter.cancel()
                 }
-                .positiveText(R.string.dialog_ok)
-                .onPositive { _, _ ->
+                .positive(R.string.dialog_ok) {
                     emitter.onComplete()
                 }
-                .negativeText(R.string.dialog_cancel)
+                .negative(R.string.dialog_cancel)
                 .showIfPossible()
                 ?: run {
                     emitter.cancel()
@@ -159,11 +185,11 @@ class ExecuteActivity : BaseActivity() {
 
     private fun resolveVariablesAndExecute(variableValues: Map<String, String>): Completable =
         VariableResolver(context)
-            .resolve(controller, shortcut, variableValues)
+            .resolve(controller.getVariables().detachFromRealm(), shortcut, variableValues)
             .flatMapCompletable { variableManager ->
                 if (shouldDelayExecution()) {
                     val waitUntil = DateUtil.calculateDate(shortcut.delay)
-                    controller.createPendingExecution(
+                    Commons.createPendingExecution(
                         shortcutId = shortcut.id,
                         resolvedVariables = variableManager.getVariableValuesByKeys(),
                         tryNumber = tryNumber,
@@ -171,6 +197,9 @@ class ExecuteActivity : BaseActivity() {
                         requiresNetwork = shortcut.isWaitForNetwork
                     )
                 } else {
+                    if (shouldFinishImmediately()) {
+                        finishWithoutAnimation()
+                    }
                     executeWithActions(variableManager)
                 }
             }
@@ -182,7 +211,7 @@ class ExecuteActivity : BaseActivity() {
             .subscribeOn(AndroidSchedulers.mainThread())
             .concatWith(
                 if (tryNumber == 0 || (tryNumber == 1 && shortcut.delay > 0)) {
-                    scriptExecutor.execute(context, shortcut.codeOnPrepare, shortcut.id, variableManager)
+                    scriptExecutor.execute(context, shortcut.codeOnPrepare, shortcut, variableManager)
                         .subscribeOn(Schedulers.computation())
                         .observeOn(AndroidSchedulers.mainThread())
                 } else {
@@ -195,11 +224,14 @@ class ExecuteActivity : BaseActivity() {
                     Completable.complete()
                 } else {
                     executeShortcut(variableManager)
+                        .doOnEvent { _, _ ->
+                            hideProgress()
+                        }
                         .flatMapCompletable { response ->
                             scriptExecutor.execute(
                                 context = context,
                                 script = shortcut.codeOnSuccess,
-                                shortcutId = shortcut.id,
+                                shortcut = shortcut,
                                 variableManager = variableManager,
                                 response = response,
                                 recursionDepth = recursionDepth
@@ -215,7 +247,7 @@ class ExecuteActivity : BaseActivity() {
                                 scriptExecutor.execute(
                                     context = context,
                                     script = shortcut.codeOnFailure,
-                                    shortcutId = shortcut.id,
+                                    shortcut = shortcut,
                                     variableManager = variableManager,
                                     volleyError = error as? VolleyError?,
                                     recursionDepth = recursionDepth
@@ -249,7 +281,7 @@ class ExecuteActivity : BaseActivity() {
     }
 
     private fun executeShortcut(variableManager: VariableManager): Single<ShortcutResponse> =
-        HttpRequester.executeShortcut(context, shortcut, variableManager.getVariableValuesByIds())
+        HttpRequester.executeShortcut(context, shortcut, variableManager)
             .doOnSuccess { response ->
                 setLastResponse(response)
                 if (shortcut.isFeedbackErrorsOnly()) {
@@ -257,11 +289,11 @@ class ExecuteActivity : BaseActivity() {
                 } else {
                     val simple = shortcut.feedback == Shortcut.FEEDBACK_TOAST_SIMPLE
                     val output = if (simple) String.format(getString(R.string.executed), shortcutName) else generateOutputFromResponse(response)
-                    displayOutput(output, response.contentType)
+                    displayOutput(output, response.contentType, response.url)
                 }
             }
             .doOnError { error ->
-                if (!shortcut.isFeedbackUsesUI && shortcut.isWaitForNetwork && (error as? VolleyError)?.networkResponse == null) {
+                if (!shortcut.isFeedbackUsingUI && shortcut.isWaitForNetwork && (error as? VolleyError)?.networkResponse == null) {
                     rescheduleExecution(variableManager)
                     if (shortcut.feedback != Shortcut.FEEDBACK_NONE && tryNumber == 0) {
                         showToast(String.format(context.getString(R.string.execution_delayed), shortcutName), long = true)
@@ -270,14 +302,20 @@ class ExecuteActivity : BaseActivity() {
                 } else {
                     setLastResponse(null)
                     val simple = shortcut.feedback == Shortcut.FEEDBACK_TOAST_SIMPLE_ERRORS || shortcut.feedback == Shortcut.FEEDBACK_TOAST_SIMPLE
-                    displayOutput(generateOutputFromError(error, simple), ShortcutResponse.TYPE_TEXT)
+                    displayOutput(generateOutputFromError(error, simple), ShortcutResponse.TYPE_TEXT, null)
                 }
             }
 
     private fun rescheduleExecution(variableManager: VariableManager) {
         if (tryNumber < MAX_RETRY) {
             val waitUntil = DateUtil.calculateDate(calculateDelay())
-            controller.createPendingExecution(shortcut.id, variableManager.getVariableValuesByKeys(), tryNumber, waitUntil, shortcut.isWaitForNetwork)
+            Commons.createPendingExecution(
+                shortcut.id,
+                variableManager.getVariableValuesByKeys(),
+                tryNumber,
+                waitUntil,
+                shortcut.isWaitForNetwork
+            )
                 .subscribe {
                     ExecutionScheduler.schedule(context)
                 }
@@ -316,7 +354,7 @@ class ExecuteActivity : BaseActivity() {
     private fun showProgress() {
         when {
             shortcut.isFeedbackInDialog -> {
-                if (progressDialog == null) {
+                if (progressDialog == null && !isFinishing) {
                     progressDialog = ProgressDialog.show(context, null, String.format(getString(R.string.progress_dialog_message), shortcutName))
                 }
             }
@@ -324,6 +362,11 @@ class ExecuteActivity : BaseActivity() {
                 progressSpinner.visible = true
                 responseTextContainer.visible = false
                 formattedResponseText.visible = false
+                responseWebView.visible = false
+            }
+            else -> {
+                handler.removeCallbacks(showProgressRunnable)
+                handler.postDelayed(showProgressRunnable, 1000)
             }
         }
     }
@@ -337,10 +380,15 @@ class ExecuteActivity : BaseActivity() {
             shortcut.isFeedbackInWindow -> {
                 progressSpinner.visible = false
             }
+            else -> {
+                handler.removeCallbacks(showProgressRunnable)
+                progressDialog?.dismiss()
+                progressDialog = null
+            }
         }
     }
 
-    private fun displayOutput(output: String, type: String) {
+    private fun displayOutput(output: String, type: String, url: String?) {
         when (shortcut.feedback) {
             Shortcut.FEEDBACK_TOAST_SIMPLE, Shortcut.FEEDBACK_TOAST_SIMPLE_ERRORS -> {
                 showToast(output)
@@ -349,21 +397,29 @@ class ExecuteActivity : BaseActivity() {
                 showToast(output.truncate(maxLength = TOAST_MAX_LENGTH), long = true)
             }
             Shortcut.FEEDBACK_DIALOG -> {
-                MaterialDialog.Builder(context)
+                DialogBuilder(context)
                     .title(shortcutName)
-                    .content(output)
-                    .positiveText(R.string.dialog_ok)
+                    .message(HTMLUtil.format(output))
+                    .positive(R.string.dialog_ok)
                     .dismissListener { finishWithoutAnimation() }
                     .show()
             }
             Shortcut.FEEDBACK_ACTIVITY -> {
                 when (type) {
+                    ShortcutResponse.TYPE_HTML -> {
+                        responseWebView.visible = true
+                        responseWebView.loadFromString(output, url)
+                    }
                     ShortcutResponse.TYPE_JSON -> {
                         formattedResponseText.setCode(GsonUtil.prettyPrint(output), "json")
                         formattedResponseText.visible = true
                     }
                     ShortcutResponse.TYPE_XML -> {
                         formattedResponseText.setCode(output, "xml")
+                        formattedResponseText.visible = true
+                    }
+                    ShortcutResponse.TYPE_YAML, ShortcutResponse.TYPE_YAML_ALT -> {
+                        formattedResponseText.setCode(output, "yaml")
                         formattedResponseText.visible = true
                     }
                     else -> {

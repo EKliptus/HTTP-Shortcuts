@@ -1,7 +1,7 @@
 # HTTP Shortcuts for Android
 <img src="./HTTPShortcuts/app/src/main/res/drawable-xxxhdpi/ic_launcher.png" align="right" style="margin-left: 1em;"/>
 
-![Version](https://img.shields.io/badge/version-1.24.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.26.0-green.svg)
 
 A simple Android app that allows you to create shortcuts that can be placed on your home screen. Each shortcut, when clicked, triggers an HTTP request.
 
@@ -27,10 +27,10 @@ Become a [Beta Tester](https://play.google.com/apps/testing/ch.rmy.android.http_
 - Display response as a toast, window or dialog, or run silently
 - Grouping into categories through tabs
 - Value injection through variables (e.g., text, numbers, passwords, selections, colors, dates, …)
-- Trigger actions before & after execution (e.g., vibrate, show toast, extract value from response…), 
+- Run arbitrary JavaScript before & after execution, including special actions (e.g., vibrate, show toast, parse and process response…), 
 - Import & Export in JSON or cURL format
 - 3rd party integration (e.g. Tasker)
-- Themes
+- Themes (with Dark Mode support)
 
 
 ## Screenshots
@@ -46,7 +46,7 @@ Become a [Beta Tester](https://play.google.com/apps/testing/ch.rmy.android.http_
 
 ## FAQ
 
-Check out the [FAQ](http://waboodoo.ch/http-shortcuts/#faq) page.
+Check out the [FAQ](https://http-shortcuts.rmy.ch/#faq) page.
 
 ## Hints for Experts
 
@@ -78,8 +78,8 @@ The app has very basic voice support, though only experimental at this point. Tr
 - Chinese: [Kevin Mao](https://github.com/yuanrunmao)
 - French: [Flavien](https://github.com/Flavien06)
 - German: [Roland Meyer](https://github.com/Waboodoo)
-- Italian: [Flavio Barisi](https://github.com/flavio20002)
+- Italian: [Flavio Barisi](https://github.com/flavio20002), [Roberto Bellingeri](https://github.com/bellingeri)
 - Norwegian (Bokmål): [Imre Kristoffer Eilertsen](https://github.com/DandelionSprout)
-- Persian: [Amir Motahari]: https://github.com/a-motahari
+- Persian: [Amir Motahari](https://github.com/a-motahari)
 - Spanish: [iprockbyte](https://github.com/iprockbyte)
 - Turkish: [Bilal Bayrak](https://github.com/bayrakbilal)

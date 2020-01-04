@@ -15,6 +15,7 @@ import ch.rmy.android.http_shortcuts.activities.editor.authentication.ParameterA
 import ch.rmy.android.http_shortcuts.data.models.Parameter
 import ch.rmy.android.http_shortcuts.data.models.Shortcut
 import ch.rmy.android.http_shortcuts.dialogs.KeyValueDialog
+import ch.rmy.android.http_shortcuts.extensions.applyTheme
 import ch.rmy.android.http_shortcuts.extensions.attachTo
 import ch.rmy.android.http_shortcuts.extensions.bindViewModel
 import ch.rmy.android.http_shortcuts.extensions.observeTextChanges
@@ -81,6 +82,7 @@ class RequestBodyActivity : BaseActivity() {
         initDragOrdering()
 
         adapter.clickListener = { it.value?.let { parameter -> showEditDialog(parameter) } }
+        addButton.applyTheme(themeHelper)
         addButton.setOnClickListener {
             showAddDialog()
         }
@@ -131,7 +133,7 @@ class RequestBodyActivity : BaseActivity() {
     private fun updateViewModelFromViews(): Completable =
         viewModel.setRequestBody(
             contentType = contentTypeView.text.toString(),
-            bodyContent = bodyContentView.text.toString()
+            bodyContent = bodyContentView.rawString
         )
 
     private fun updateShortcutViews() {
@@ -187,6 +189,14 @@ class RequestBodyActivity : BaseActivity() {
                 }
             }
             .subscribe()
+            .attachTo(destroyer)
+    }
+
+    override fun onBackPressed() {
+        updateViewModelFromViews()
+            .subscribe {
+                finish()
+            }
             .attachTo(destroyer)
     }
 

@@ -23,19 +23,81 @@
 </head>
 <body>
 <article>
-    <h2>Version 1.24.0</h2>
-    <h3>To be continued..</h3>
+    <h2>Version 1.26.0</h2>
+    <h3>Miscellaneous</h3>
+    <ul>
+        <li>Made "Help me Translate" button more foolproof</li>
+    </ul>
+    <h3>Bugfixes</h3>
+    <ul>
+        <li>GET requests can now have a <i>Content-Type</i> header</li>
+        <li>CURL export of GET requests no longer incorrectly sets method to POST</li>
+        <li>Variables can now be used in URLs again without triggering validation errors</li>
+    </ul>
+</article>
+<article>
+    <h2>Version 1.25.0</h2>
+    <h3>Dark Mode</h3>
     <p>
-        - Redesigned editor
-        - Replaced actions with option to execute JS code before/after execution
-        - Option to follow redirects
-        - Option to change background of categories
-        - Loosened variable name restrictions
-        - Fixed bug where importing shortcuts overwrites existing shortcuts
-        - Fixed DELETE and OPTIONS requests not sending a request body
-        - Fixed negative step sizes in Slider variable
-        - Increased maximum constant length to 3000 characters
+        The app now has a dark theme. It can be enabled or disabled via the settings.
     </p>
+    <h3>Miscellaneous</h3>
+    <ul>
+        <li>Increased font size of response</li>
+        <li>Improved value picker for timeout settings</li>
+    </ul>
+    <h3>Bugfixes</h3>
+    <ul>
+        <li>Variable changes in pre-request actions now properly affect the current execution</li>
+        <li>Execution now less likely to fail due to battery saver or data saver modes</li>
+    </ul>
+</article>
+<article>
+    <h2>Version 1.24.1</h2>
+    <h3>Bugfixes</h3>
+    <ul>
+        <li>Fixed Tasker integration</li>
+        <li>Fixed variable dialogs triggering when they should not</li>
+        <li>Fixed resolution of variables within variables</li>
+        <li>Fixed adding of variables to request body</li>
+        <li>Fixed a crash when setting delay to 1 second</li>
+    </ul>
+</article>
+<article>
+    <h2>Version 1.24.0</h2>
+    <h3>Redesigned Editor</h3>
+    <p>
+        The editor for creating and editing shortcuts was completely redesigned. The many different options are now separated
+        into their own screens to make the UI easier to navigate.
+    </p>
+    <h3>JavaScript Code Execution</h3>
+    <p>
+        Previously you were able to add specific actions to be executed before or after a shortcut runs. Now, instead of a static list
+        of actions, you can run arbitrary JavaScript code, which allows for much more flexibility and more advanced workflows.
+        On top of that, there are now 2 new actions that can be called directly from within the JavaScript code:
+    </p>
+    <ul>
+        <li>Added action to show a dialog window with text in it</li>
+        <li>Added action to copy text to the clipboard</li>
+    </ul>
+    <h3>Miscellaneous</h3>
+    <ul>
+        <li>HTML responses are shown in a web view instead of as plain text, allowing to include styling and formatting</li>
+        <li>Basic HTML formatting is now possible when using response type "Dialog" or "showDialog" action</li>
+        <li>Added option to have HTTP requests follow redirects</li>
+        <li>Increased maximum length for variables of type 'Constant' from 300 to 3000 characters</li>
+        <li>Loosened variable name restrictions: They may now contain underscores and be up to 30 characters long.</li>
+        <li>Added option to change the background of individual categories</li>
+    </ul>
+    <h3>Bugfixes</h3>
+    <ul>
+        <li>Fixed bug where importing shortcuts would sometimes overwrite other existing shortcuts</li>
+        <li>Fixed requests with method DELETE or OPTIONS not sending a request body</li>
+        <li>Fixed zero or negative step sizes in variables of type 'Slider' crashing the app</li>
+    </ul>
+</article>
+
+<article>
     <h2>Version 1.23.0</h2>
     <h3>App Lock</h3>
     <p>

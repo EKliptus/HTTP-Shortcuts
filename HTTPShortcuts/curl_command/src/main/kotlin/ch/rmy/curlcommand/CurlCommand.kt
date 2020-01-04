@@ -34,9 +34,6 @@ class CurlCommand private constructor() : Serializable {
 
         fun data(data: String) = also {
             curlCommand.data = curlCommand.data + data
-            if (curlCommand.method == METHOD_GET) {
-                curlCommand.method = METHOD_POST
-            }
         }
 
         fun timeout(timeout: Int) = also {
@@ -62,7 +59,6 @@ class CurlCommand private constructor() : Serializable {
     companion object {
 
         const val METHOD_GET = "GET"
-        const val METHOD_POST = "POST"
 
     }
 

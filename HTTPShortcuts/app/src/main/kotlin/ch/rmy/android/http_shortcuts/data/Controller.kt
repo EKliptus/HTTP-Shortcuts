@@ -2,7 +2,6 @@ package ch.rmy.android.http_shortcuts.data
 
 import ch.rmy.android.http_shortcuts.data.models.Base
 import ch.rmy.android.http_shortcuts.data.models.PendingExecution
-import ch.rmy.android.http_shortcuts.data.models.Shortcut
 import ch.rmy.android.http_shortcuts.data.models.Variable
 import ch.rmy.android.http_shortcuts.extensions.detachFromRealm
 import ch.rmy.android.http_shortcuts.utils.Destroyable
@@ -10,7 +9,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmResults
 import java.io.Closeable
-import java.util.*
 
 class Controller : Destroyable, Closeable {
 
@@ -29,8 +27,6 @@ class Controller : Destroyable, Closeable {
     fun getVariables(): RealmList<Variable> = getBase().variables
 
     fun getShortcutById(id: String) = Repository.getShortcutById(realm, id)
-
-    fun getShortcutByName(shortcutName: String): Shortcut? = Repository.getShortcutByName(realm, shortcutName)
 
     fun getShortcutsPendingExecution(): RealmResults<PendingExecution> = Repository.getShortcutsPendingExecution(realm)
 
@@ -56,29 +52,5 @@ class Controller : Destroyable, Closeable {
             oldBase.variables.addAll(persistedVariables)
         }
     }
-
-    fun renameShortcut(shortcutId: String, newName: String) =
-        Transactions.commit { realm ->
-            Repository.getShortcutById(realm, shortcutId)?.name = newName
-        }
-
-    fun createPendingExecution(
-        shortcutId: String,
-        resolvedVariables: Map<String, String>,
-        tryNumber: Int = 0,
-        waitUntil: Date? = null,
-        requiresNetwork: Boolean
-    ) =
-        Transactions.commit { realm ->
-            val alreadyPending = Repository.getShortcutPendingExecution(realm, shortcutId) != null
-            if (!alreadyPending) {
-                realm.copyToRealm(PendingExecution.createNew(shortcutId, resolvedVariables, tryNumber, waitUntil, requiresNetwork))
-            }
-        }
-
-    fun removePendingExecution(shortcutId: String) =
-        Transactions.commit { realm ->
-            Repository.getShortcutPendingExecution(realm, shortcutId)?.deleteFromRealm()
-        }
 
 }

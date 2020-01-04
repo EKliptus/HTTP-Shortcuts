@@ -8,16 +8,17 @@ class ActionFactory(private val context: Context) {
 
     private val types by lazy {
         listOf(
+            CopyToClipboardActionType(context),
             DialogActionType(context),
+            RenameShortcutActionType(context),
+            TriggerShortcutActionType(context),
+            ToastActionType(context),
+            VibrateActionType(context),
             ExtractBodyActionType(context),
             ExtractStatusCodeActionType(context),
             ExtractHeaderActionType(context),
             ExtractCookieActionType(context),
-            SetVariableActionType(context),
-            RenameShortcutActionType(context),
-            TriggerShortcutActionType(context),
-            ToastActionType(context),
-            VibrateActionType(context)
+            SetVariableActionType(context)
         )
     }
 

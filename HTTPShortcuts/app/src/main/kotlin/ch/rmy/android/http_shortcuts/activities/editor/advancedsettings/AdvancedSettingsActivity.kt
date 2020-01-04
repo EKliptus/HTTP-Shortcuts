@@ -9,14 +9,13 @@ import android.widget.TextView
 import androidx.lifecycle.Observer
 import ch.rmy.android.http_shortcuts.R
 import ch.rmy.android.http_shortcuts.activities.BaseActivity
+import ch.rmy.android.http_shortcuts.dialogs.DialogBuilder
 import ch.rmy.android.http_shortcuts.extensions.attachTo
 import ch.rmy.android.http_shortcuts.extensions.bindViewModel
 import ch.rmy.android.http_shortcuts.extensions.observeChecked
-import ch.rmy.android.http_shortcuts.extensions.showIfPossible
 import ch.rmy.android.http_shortcuts.utils.BaseIntentBuilder
 import ch.rmy.android.http_shortcuts.utils.SimpleOnSeekBarChangeListener
 import ch.rmy.android.http_shortcuts.views.PanelButton
-import com.afollestad.materialdialogs.MaterialDialog
 import kotterknife.bindView
 
 class AdvancedSettingsActivity : BaseActivity() {
@@ -89,7 +88,7 @@ class AdvancedSettingsActivity : BaseActivity() {
         val slider = view.findViewById<SeekBar>(R.id.slider)
         val label = view.findViewById<TextView>(R.id.slider_value)
 
-        slider.max = TIMEOUT_MAX - TIMEOUT_MIN
+        slider.max = TIMEOUT_OPTIONS.lastIndex
 
         slider.setOnSeekBarChangeListener(object : SimpleOnSeekBarChangeListener() {
             override fun onProgressChanged(slider: SeekBar, progress: Int, fromUser: Boolean) {
@@ -99,11 +98,10 @@ class AdvancedSettingsActivity : BaseActivity() {
         label.text = viewModel.getTimeoutText(shortcut.timeout)
         slider.progress = timeoutToProgress(shortcut.timeout)
 
-        MaterialDialog.Builder(context)
+        DialogBuilder(context)
             .title(R.string.label_timeout)
-            .customView(view, true)
-            .positiveText(R.string.dialog_ok)
-            .onPositive { _, _ ->
+            .view(view)
+            .positive(R.string.dialog_ok) {
                 viewModel.setTimeout(progressToTimeout(slider.progress))
                     .subscribe()
                     .attachTo(destroyer)
@@ -115,13 +113,36 @@ class AdvancedSettingsActivity : BaseActivity() {
 
     companion object {
 
-        private const val TIMEOUT_MIN = 1
+        private val TIMEOUT_OPTIONS = arrayOf(
+            500,
+            1000,
+            2000,
+            3000,
+            5000,
+            8000,
+            10000,
+            15000,
+            20000,
+            25000,
+            30000,
+            45000,
+            60000,
+            90000,
+            120000,
+            180000,
+            300000,
+            450000,
+            600000
+        )
 
-        private const val TIMEOUT_MAX = 10 * 60
 
-        private fun timeoutToProgress(timeout: Int) = (timeout / 1000) - TIMEOUT_MIN
+        private fun timeoutToProgress(timeout: Int) = TIMEOUT_OPTIONS.indexOfFirst {
+            it >= timeout
+        }
+            .takeUnless { it == -1 }
+            ?: TIMEOUT_OPTIONS.lastIndex
 
-        private fun progressToTimeout(progress: Int) = (progress + TIMEOUT_MIN) * 1000
+        private fun progressToTimeout(progress: Int) = TIMEOUT_OPTIONS[progress]
 
     }
 

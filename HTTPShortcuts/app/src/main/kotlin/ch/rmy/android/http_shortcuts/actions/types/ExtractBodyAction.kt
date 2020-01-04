@@ -5,12 +5,12 @@ import ch.rmy.android.http_shortcuts.data.Commons
 import ch.rmy.android.http_shortcuts.http.ShortcutResponse
 import ch.rmy.android.http_shortcuts.utils.GsonUtil
 import ch.rmy.android.http_shortcuts.variables.VariableManager
-import ch.rmy.android.http_shortcuts.variables.VariablePlaceholderProvider
 import com.android.volley.VolleyError
 import com.android.volley.toolbox.HttpHeaderParser
 import io.reactivex.Completable
 import java.nio.charset.Charset
 
+@Deprecated("Will be removed eventually")
 class ExtractBodyAction(
     actionType: ExtractBodyActionType,
     data: Map<String, String>
@@ -106,9 +106,6 @@ class ExtractBodyAction(
         variableManager.setVariableValueById(variableId, value)
         return Commons.setVariableValue(variableId, value)
     }
-
-    override fun createEditorView(context: Context, variablePlaceholderProvider: VariablePlaceholderProvider) =
-        ExtractBodyActionEditorView(context, this, variablePlaceholderProvider)
 
     companion object {
 
